@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scratch DS Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🧱 Scratch DS Generator</h1>
+    <span class="subtitle">データ構造スプライトを .sb3 ファイルとして生成</span>
+  </header>
+
+  <div class="app-body">
+    <!-- Left panel: DS selection cards -->
+    <div class="left-panel">
+      <div class="panel-header">データ構造を選択（クリックで追加）</div>
+      <div id="ds-grid" class="ds-grid"></div>
+    </div>
+
+    <!-- Right panel: added entries -->
+    <div class="right-panel">
+      <div class="panel-header">追加済みスプライト</div>
+      <div id="entry-list" class="entry-list"></div>
+      <div id="entry-empty" class="entry-empty">
+        <span class="icon">📦</span>
+        <span>左のカードをクリックしてスプライトを追加</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <button id="gen-btn" disabled>▶ .sb3 を生成してダウンロード</button>
+  </footer>
+
+  <!-- CDN dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
