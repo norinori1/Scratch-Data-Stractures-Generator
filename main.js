@@ -67,11 +67,27 @@ function renderEntries() {
   entries.forEach((entry, i) => {
     const row = document.createElement('div');
     row.className = 'entry-row';
-    row.innerHTML = `
-      <input type="text" class="entry-name" value="${entry.spriteName}" data-index="${i}" />
-      <span class="entry-badge" style="background:${entry.color}">${entry.dsName}</span>
-      <button class="entry-delete" data-index="${i}" title="削除">✕</button>
-    `;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'entry-name';
+    input.value = entry.spriteName;
+    input.dataset.index = String(i);
+
+    const badge = document.createElement('span');
+    badge.className = 'entry-badge';
+    badge.style.background = entry.color;
+    badge.textContent = entry.dsName;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'entry-delete';
+    deleteBtn.dataset.index = String(i);
+    deleteBtn.title = '削除';
+    deleteBtn.textContent = '✕';
+
+    row.appendChild(input);
+    row.appendChild(badge);
+    row.appendChild(deleteBtn);
     list.appendChild(row);
   });
 
