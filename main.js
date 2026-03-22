@@ -94,7 +94,13 @@ function renderEntries() {
   list.querySelectorAll('.entry-name').forEach(input => {
     input.addEventListener('change', e => {
       const idx = parseInt(e.target.dataset.index);
-      entries[idx].spriteName = e.target.value.trim() || entries[idx].spriteName;
+      const trimmed = e.target.value.trim();
+      if (trimmed === '') {
+        // Reject empty values: restore previous name to keep UI and data in sync
+        e.target.value = entries[idx].spriteName;
+        return;
+      }
+      entries[idx].spriteName = trimmed;
     });
   });
 
