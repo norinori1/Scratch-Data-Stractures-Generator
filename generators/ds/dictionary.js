@@ -10,7 +10,7 @@
  *   "0" = empty   "1" = occupied   "2" = tombstone (deleted)
  */
 export function buildDictionary(spriteId) {
-  const TABLE_SIZE = 64;
+  const TABLE_SIZE = 256;
   let c = 0;
   const bid = () => `${spriteId}_b${c++}`;
 
@@ -489,13 +489,20 @@ export function buildDictionary(spriteId) {
     blocks[ifB].next       = advSlot;
     blocks[advSlot].parent = ifB;
 
+    // Initialize result = "" so that if the key is not found the return value is always ""
+    const setResInit = bid();
+    addBlock(setResInit, 'data_setvariableto', null, hashLast,
+      { VALUE: [1, [10, '']] }, { VARIABLE: ['result', resultVarId] });
+    blocks[hashLast].next    = setResInit;
+    blocks[setResInit].parent = hashLast;
+
     const repeatId = bid();
-    addBlock(repeatId, 'control_repeat', null, hashLast, {
+    addBlock(repeatId, 'control_repeat', null, setResInit, {
       TIMES: [1, [6, String(TABLE_SIZE)]], SUBSTACK: [2, ifA],
     }, {});
-    blocks[hashLast].next   = repeatId;
-    blocks[repeatId].parent = hashLast;
-    blocks[ifA].parent      = repeatId;
+    blocks[setResInit].next  = repeatId;
+    blocks[repeatId].parent  = setResInit;
+    blocks[ifA].parent       = repeatId;
 
     addBlock(defId, 'procedures_definition', hashFirst, null,
       { custom_block: [1, protoId] }, {}, false, true, { x: 20, y: 700 });
