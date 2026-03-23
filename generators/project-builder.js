@@ -57,7 +57,7 @@ export function buildProject(entries) {
     const builder = DS_BUILDERS[dsId];
     if (!builder) return;
 
-    const dsConfig = builder(spriteId);
+    const dsConfig = builder(spriteId, entry.tableSize);
     const { target, costumes } = buildSprite(entry, dsConfig, index + 1);
     targets.push(target);
     allCostumes.push(...costumes);

@@ -1,5 +1,8 @@
 import { buildProject } from './generators/project-builder.js';
 
+const HASH_DS_IDS = new Set(['dictionary', 'hashset']);
+const DEFAULT_TABLE_SIZE = 65536;
+
 const DS_LIST = [
   { id: 'dictionary',    name: 'Dictionary',    complexity: 'get/set: O(1)',           description: 'キーで値を管理するマップ',            color: '#4A90E2' },
   { id: 'hashset',       name: 'HashSet',       complexity: 'contains: O(1)',          description: '重複なし集合、存在確認が速い',         color: '#7ED321' },
@@ -39,7 +42,8 @@ function addEntry(ds) {
   if (!counters[ds.id]) counters[ds.id] = 0;
   counters[ds.id]++;
   const spriteName = ds.name.replace(/[^a-zA-Z0-9]/g, '') + counters[ds.id];
-  entries.push({ spriteName, dsId: ds.id, dsName: ds.name, color: ds.color });
+  const tableSize = HASH_DS_IDS.has(ds.id) ? DEFAULT_TABLE_SIZE : undefined;
+  entries.push({ spriteName, dsId: ds.id, dsName: ds.name, color: ds.color, tableSize });
   renderEntries();
 }
 
@@ -79,13 +83,43 @@ function renderEntries() {
     badge.style.background = entry.color;
     badge.textContent = entry.dsName;
 
+    if (HASH_DS_IDS.has(entry.dsId)) {
+      const sizeLabel = document.createElement('label');
+      sizeLabel.className = 'entry-size-label';
+      sizeLabel.textContent = 'サイズ:';
+
+      const sizeInput = document.createElement('input');
+      sizeInput.type = 'number';
+      sizeInput.className = 'entry-size';
+      sizeInput.value = entry.tableSize ?? DEFAULT_TABLE_SIZE;
+      sizeInput.min = '64';
+      sizeInput.max = '1000000';
+      sizeInput.step = '1';
+      sizeInput.dataset.index = String(i);
+
+      sizeInput.addEventListener('change', e => {
+        const idx = parseInt(e.target.dataset.index);
+        const val = parseInt(e.target.value);
+        if (!isNaN(val) && val >= 64) {
+          entries[idx].tableSize = val;
+        } else {
+          e.target.value = entries[idx].tableSize ?? DEFAULT_TABLE_SIZE;
+        }
+      });
+
+      row.appendChild(input);
+      row.appendChild(sizeLabel);
+      row.appendChild(sizeInput);
+    } else {
+      row.appendChild(input);
+    }
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'entry-delete';
     deleteBtn.dataset.index = String(i);
     deleteBtn.title = '削除';
     deleteBtn.textContent = '✕';
 
-    row.appendChild(input);
     row.appendChild(badge);
     row.appendChild(deleteBtn);
     list.appendChild(row);

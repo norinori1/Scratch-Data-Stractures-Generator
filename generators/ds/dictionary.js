@@ -9,8 +9,8 @@
  * Slot states stored in _ht_state list:
  *   "0" = empty   "1" = occupied   "2" = tombstone (deleted)
  */
-export function buildDictionary(spriteId) {
-  const TABLE_SIZE = 256;
+export function buildDictionary(spriteId, tableSize = 65536) {
+  const TABLE_SIZE = tableSize;
   let c = 0;
   const bid = () => `${spriteId}_b${c++}`;
 

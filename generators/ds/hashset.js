@@ -8,8 +8,8 @@
  * Slot states in _hs_state:
  *   "0" = empty   "1" = occupied   "2" = tombstone (deleted)
  */
-export function buildHashset(spriteId) {
-  const TABLE_SIZE = 256;
+export function buildHashset(spriteId, tableSize = 65536) {
+  const TABLE_SIZE = tableSize;
   let c = 0;
   const bid = () => `${spriteId}_b${c++}`;
 
