@@ -9,7 +9,7 @@
  *   "0" = empty   "1" = occupied   "2" = tombstone (deleted)
  */
 export function buildHashset(spriteId) {
-  const TABLE_SIZE = 64;
+  const TABLE_SIZE = 256;
   let c = 0;
   const bid = () => `${spriteId}_b${c++}`;
 
