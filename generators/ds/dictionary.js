@@ -278,7 +278,7 @@ export function buildDictionary(spriteId) {
     const argKeyProc = `${spriteId}_set_key`;
     const argValProc = `${spriteId}_set_val`;
 
-    const { first: hashFirst, last: hashLast } = buildHashAndSlot(argKeyProc, defId);
+    const { first: hashFirst, last: hashLast } = buildHashAndSlot('key', defId);
 
     // set _ht_ts = 0
     const setTs0 = bid();
@@ -289,13 +289,13 @@ export function buildDictionary(spriteId) {
 
     // ─ Branch A: state="1" AND keys[slot]=key  →  update value, stop ─
     const stA  = buildStateEq('1');
-    const kEqA = buildKeyEq(argKeyProc);
+    const kEqA = buildKeyEq('key');
     const andA = bid();
     addBlock(andA, 'operator_and', null, null,
       { OPERAND1: [2, stA], OPERAND2: [2, kEqA] }, {});
     blocks[stA].parent  = andA;
     blocks[kEqA].parent = andA;
-    const repValA = buildRepListArg(valsListId, 'values', argValProc);
+    const repValA = buildRepListArg(valsListId, 'values', 'value');
     const stopA   = buildStop();
     blocks[repValA].next = stopA;
     blocks[stopA].parent = repValA;
@@ -323,8 +323,8 @@ export function buildDictionary(spriteId) {
       { CONDITION: [2, tsGt0], SUBSTACK: [2, setSlotTs] }, {});
     blocks[tsGt0].parent     = ifTs;
     blocks[setSlotTs].parent = ifTs;
-    const repKeyB = buildRepListArg(keysListId, 'keys', argKeyProc);
-    const repValB = buildRepListArg(valsListId, 'values', argValProc);
+    const repKeyB = buildRepListArg(keysListId, 'keys', 'key');
+    const repValB = buildRepListArg(valsListId, 'values', 'value');
     const repStB  = buildRepState('1');
     const stopB   = buildStop();
     blocks[ifTs].next      = repKeyB;
@@ -394,8 +394,8 @@ export function buildDictionary(spriteId) {
     addBlock(setSlotF, 'data_setvariableto', null, null,
       { VALUE: [3, tsR6, [12, '_ht_ts', tsVarId]] }, { VARIABLE: ['_ht_slot', slotVarId] });
     blocks[tsR6].parent = setSlotF;
-    const repKeyF = buildRepListArg(keysListId, 'keys', argKeyProc);
-    const repValF = buildRepListArg(valsListId, 'values', argValProc);
+    const repKeyF = buildRepListArg(keysListId, 'keys', 'key');
+    const repValF = buildRepListArg(valsListId, 'values', 'value');
     const repStF  = buildRepState('1');
     blocks[setSlotF].next  = repKeyF;
     blocks[repKeyF].parent = setSlotF;
@@ -441,7 +441,7 @@ export function buildDictionary(spriteId) {
     const argKeySh   = bid();
     const argKeyProc = `${spriteId}_get_key`;
 
-    const { first: hashFirst, last: hashLast } = buildHashAndSlot(argKeyProc, defId);
+    const { first: hashFirst, last: hashLast } = buildHashAndSlot('key', defId);
 
     // Branch A: state="0" → result="", stop
     const stA         = buildStateEq('0');
@@ -459,7 +459,7 @@ export function buildDictionary(spriteId) {
 
     // Branch B: state="1" AND key matches → result=values[slot], stop
     const stB  = buildStateEq('1');
-    const kEqB = buildKeyEq(argKeyProc);
+    const kEqB = buildKeyEq('key');
     const andB = bid();
     addBlock(andB, 'operator_and', null, null,
       { OPERAND1: [2, stB], OPERAND2: [2, kEqB] }, {});
@@ -524,7 +524,7 @@ export function buildDictionary(spriteId) {
     const argKeySh   = bid();
     const argKeyProc = `${spriteId}_contains_key`;
 
-    const { first: hashFirst, last: hashLast } = buildHashAndSlot(argKeyProc, defId);
+    const { first: hashFirst, last: hashLast } = buildHashAndSlot('key', defId);
 
     const setRes0 = bid();
     addBlock(setRes0, 'data_setvariableto', null, hashLast,
@@ -543,7 +543,7 @@ export function buildDictionary(spriteId) {
 
     // Branch B: state="1" AND match → result=1, stop
     const stB  = buildStateEq('1');
-    const kEqB = buildKeyEq(argKeyProc);
+    const kEqB = buildKeyEq('key');
     const andB = bid();
     addBlock(andB, 'operator_and', null, null,
       { OPERAND1: [2, stB], OPERAND2: [2, kEqB] }, {});
@@ -602,7 +602,7 @@ export function buildDictionary(spriteId) {
     const argKeySh   = bid();
     const argKeyProc = `${spriteId}_del_key`;
 
-    const { first: hashFirst, last: hashLast } = buildHashAndSlot(argKeyProc, defId);
+    const { first: hashFirst, last: hashLast } = buildHashAndSlot('key', defId);
 
     // Branch A: state="0" → stop
     const stA  = buildStateEq('0');
@@ -615,7 +615,7 @@ export function buildDictionary(spriteId) {
 
     // Branch B: state="1" AND match → mark as tombstone "2", stop
     const stB  = buildStateEq('1');
-    const kEqB = buildKeyEq(argKeyProc);
+    const kEqB = buildKeyEq('key');
     const andB = bid();
     addBlock(andB, 'operator_and', null, null,
       { OPERAND1: [2, stB], OPERAND2: [2, kEqB] }, {});
