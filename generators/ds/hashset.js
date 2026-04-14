@@ -24,6 +24,7 @@ export function buildHashset(spriteId, tableSize = 65536) {
   const slotVarId   = `${spriteId}_ht_slot`;
   const codeVarId   = `${spriteId}_ht_code`;
   const tsVarId     = `${spriteId}_ht_ts`;
+  const sizeVarId   = `${spriteId}_ht_size`;
 
   const ASCII_CHARS = [];
   for (let i = 32; i <= 126; i++) ASCII_CHARS.push(String.fromCharCode(i));
@@ -41,6 +42,7 @@ export function buildHashset(spriteId, tableSize = 65536) {
     [slotVarId]:   ['_ht_slot', 0],
     [codeVarId]:   ['_ht_code', 0],
     [tsVarId]:     ['_ht_ts',   0],
+    [sizeVarId]:   ['_ht_size', 0],
   };
 
   const blocks = {};
@@ -288,7 +290,10 @@ export function buildHashset(spriteId, tableSize = 65536) {
     blocks[repItemB].parent = ifTs;
     blocks[repItemB].next  = repStB;
     blocks[repStB].parent  = repItemB;
-    blocks[repStB].next    = stopB;
+    const incSizeB = bid();
+    addBlock(incSizeB, 'data_changevariableby', stopB, repStB, { VALUE: [1, [4, '1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
+    blocks[repStB].next    = incSizeB;
+    blocks[incSizeB].parent = repStB;
     blocks[stopB].parent   = repStB;
     const ifB = bid();
     addBlock(ifB, 'control_if', null, null,
@@ -350,7 +355,11 @@ export function buildHashset(spriteId, tableSize = 65536) {
     const repStF   = buildRepState('1');
     blocks[setSlotF].next   = repItemF;
     blocks[repItemF].parent = setSlotF;
+    const incSizeF = bid();
+    addBlock(incSizeF, 'data_changevariableby', null, repStF, { VALUE: [1, [4, '1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
     blocks[repItemF].next   = repStF;
+    blocks[repStF].next = incSizeF;
+    blocks[incSizeF].parent = repStF;
     blocks[repStF].parent   = repItemF;
     const ifFinal = bid();
     addBlock(ifFinal, 'control_if', null, repeatId,
@@ -454,7 +463,7 @@ export function buildHashset(spriteId, tableSize = 65536) {
     blocks[hashFirst].parent = defId;
   }
 
-  // ── Procedure 3: remove item: %s ─────────────────────────────────────
+      // ── Procedure 3: remove item: %s ─────────────────────────────────────
   {
     const defId     = bid();
     const protoId   = bid();
@@ -479,9 +488,14 @@ export function buildHashset(spriteId, tableSize = 65536) {
     blocks[stB].parent  = andB;
     blocks[iEqB].parent = andB;
     const repStB = buildRepState('2');
+    const decSize = bid();
+    addBlock(decSize, 'data_changevariableby', null, repStB, { VALUE: [1, [4, '-1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
     const stopB  = buildStop();
-    blocks[repStB].next  = stopB;
-    blocks[stopB].parent = repStB;
+    blocks[repStB].next  = decSize;
+    blocks[decSize].parent = repStB;
+    blocks[decSize].next = stopB;
+    blocks[stopB].parent = decSize;
+
     const ifB = bid();
     addBlock(ifB, 'control_if', null, null,
       { CONDITION: [2, andB], SUBSTACK: [2, repStB] }, {});
@@ -521,45 +535,15 @@ export function buildHashset(spriteId, tableSize = 65536) {
     blocks[hashFirst].parent = defId;
   }
 
-  // ── Procedure 4: size ────────────────────────────────────────────────
-  // Count slots with state="1"  (O(TABLE_SIZE) = O(1) constant)
+
+      // ── Procedure 4: size ────────────────────────────────────────────────
   {
-    const defId   = bid();
+    const defId = bid();
     const protoId = bid();
+    const sizeR = mkVar('_ht_size', sizeVarId);
+    const setResId = bid();
 
-    // set result = 0; set _ht_slot = 1; repeat TABLE_SIZE: if state[slot]="1": change result by 1; slot++
-    const setRes0 = bid();
-    const setSlot1 = bid();
-    addBlock(setRes0, 'data_setvariableto', setSlot1, defId,
-      { VALUE: [1, [4, '0']] }, { VARIABLE: ['result', resultVarId] });
-    addBlock(setSlot1, 'data_setvariableto', null, setRes0,
-      { VALUE: [1, [4, '1']] }, { VARIABLE: ['_ht_slot', slotVarId] });
-    blocks[setRes0].next   = setSlot1;
-
-    const stCnt = buildStateEq('1');
-    const incRes = bid();
-    addBlock(incRes, 'data_changevariableby', null, null,
-      { VALUE: [1, [4, '1']] }, { VARIABLE: ['result', resultVarId] });
-    const ifCnt = bid();
-    addBlock(ifCnt, 'control_if', null, null,
-      { CONDITION: [2, stCnt], SUBSTACK: [2, incRes] }, {});
-    blocks[stCnt].parent  = ifCnt;
-    blocks[incRes].parent = ifCnt;
-
-    const advSlot = buildAdvanceSlot();
-    blocks[ifCnt].next     = advSlot;
-    blocks[advSlot].parent = ifCnt;
-
-    const repeatId = bid();
-    addBlock(repeatId, 'control_repeat', null, setSlot1, {
-      TIMES: [1, [6, String(TABLE_SIZE)]], SUBSTACK: [2, ifCnt],
-    }, {});
-    blocks[setSlot1].next   = repeatId;
-    blocks[repeatId].parent = setSlot1;
-    blocks[ifCnt].parent    = repeatId;
-
-    addBlock(defId, 'procedures_definition', setRes0, null,
-      { custom_block: [1, protoId] }, {}, false, true, { x: 20, y: 2100 });
+    addBlock(defId, 'procedures_definition', setResId, null, { custom_block: [1, protoId] }, {}, false, true, { x: 20, y: 2100 });
     addBlock(protoId, 'procedures_prototype', null, defId, {}, {}, true, false, {
       mutation: {
         tagName: 'mutation', children: [],
@@ -570,10 +554,14 @@ export function buildHashset(spriteId, tableSize = 65536) {
         warp: 'false',
       },
     });
-    blocks[setRes0].parent = defId;
+
+    addBlock(setResId, 'data_setvariableto', null, defId,
+      { VALUE: [3, sizeR, [12, '_ht_size', sizeVarId]] }, { VARIABLE: ['result', resultVarId] });
+    blocks[sizeR].parent = setResId;
   }
 
-  // ── Procedure 5: clear ───────────────────────────────────────────────
+
+      // ── Procedure 5: clear ───────────────────────────────────────────────
   {
     const defId   = bid();
     const protoId = bid();
@@ -592,12 +580,17 @@ export function buildHashset(spriteId, tableSize = 65536) {
     addBlock(addSt,   'data_addtolist', null,  addItem,
       { ITEM: [1, [10, '0']] }, { LIST: ['_hs_state', stateListId] });
 
+    const setSize0 = bid();
+    addBlock(setSize0, 'data_setvariableto', null, delState, { VALUE: [1, [4, '0']] }, { VARIABLE: ['_ht_size', sizeVarId] });
+    blocks[delState].next = setSize0;
+    blocks[setSize0].parent = delState;
+
     const repeatId = bid();
-    addBlock(repeatId, 'control_repeat', null, delState, {
+    addBlock(repeatId, 'control_repeat', null, setSize0, {
       TIMES: [1, [6, String(TABLE_SIZE)]], SUBSTACK: [2, addItem],
     }, {});
-    blocks[delState].next   = repeatId;
-    blocks[repeatId].parent = delState;
+    blocks[setSize0].next   = repeatId;
+    blocks[repeatId].parent = setSize0;
     blocks[addItem].parent  = repeatId;
 
     addBlock(defId, 'procedures_definition', delItems, null,
