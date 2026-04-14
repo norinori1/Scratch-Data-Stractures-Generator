@@ -26,6 +26,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
   const slotVarId   = `${spriteId}_ht_slot`;
   const codeVarId   = `${spriteId}_ht_code`;
   const tsVarId     = `${spriteId}_ht_ts`;
+  const sizeVarId   = `${spriteId}_ht_size`;
 
   // Pre-populate: keys/values = 64 empty strings, state = 64 "0"s,
   // _ht_chars = ASCII 32-126 (95 printable chars) – no init procedure needed!
@@ -46,6 +47,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     [slotVarId]:   ['_ht_slot', 0],
     [codeVarId]:   ['_ht_code', 0],
     [tsVarId]:     ['_ht_ts',   0],
+    [sizeVarId]:   ['_ht_size', 0],
   };
 
   const blocks = {};
@@ -263,7 +265,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     return { first: setH0, last: setSlot };
   }
 
-  // ── Procedure 1: set key: %s value: %s ──────────────────────────────────
+      // ── Procedure 1: set key: %s value: %s ──────────────────────────────────
   // Hash key → slot, probe table:
   //   state="1" & key match → update value, stop
   //   state="0"             → insert (reuse first tombstone if any), stop
@@ -326,15 +328,22 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     const repKeyB = buildRepListArg(keysListId, 'keys', 'key');
     const repValB = buildRepListArg(valsListId, 'values', 'value');
     const repStB  = buildRepState('1');
-    const stopB   = buildStop();
+    const incSizeB = bid();
+    const stopB   = bid();
+    addBlock(incSizeB, 'data_changevariableby', stopB, repStB, { VALUE: [1, [4, '1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
+    addBlock(stopB, 'control_stop', null, incSizeB, {}, { STOP_OPTION: ['this script', null] }, false, false, { mutation: { tagName: 'mutation', children: [], hasnext: 'false' } });
+
     blocks[ifTs].next      = repKeyB;
     blocks[repKeyB].parent = ifTs;
     blocks[repKeyB].next   = repValB;
     blocks[repValB].parent = repKeyB;
     blocks[repValB].next   = repStB;
     blocks[repStB].parent  = repValB;
-    blocks[repStB].next    = stopB;
-    blocks[stopB].parent   = repStB;
+    blocks[repStB].next    = incSizeB;
+    blocks[incSizeB].parent = repStB;
+    blocks[incSizeB].next = stopB;
+    blocks[stopB].parent = incSizeB;
+
     const ifB = bid();
     addBlock(ifB, 'control_if', null, null,
       { CONDITION: [2, stB], SUBSTACK: [2, ifTs] }, {});
@@ -397,12 +406,18 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     const repKeyF = buildRepListArg(keysListId, 'keys', 'key');
     const repValF = buildRepListArg(valsListId, 'values', 'value');
     const repStF  = buildRepState('1');
+    const incSizeF = bid();
+    addBlock(incSizeF, 'data_changevariableby', null, repStF, { VALUE: [1, [4, '1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
+
     blocks[setSlotF].next  = repKeyF;
     blocks[repKeyF].parent = setSlotF;
     blocks[repKeyF].next   = repValF;
     blocks[repValF].parent = repKeyF;
     blocks[repValF].next   = repStF;
     blocks[repStF].parent  = repValF;
+    blocks[repStF].next = incSizeF;
+    blocks[incSizeF].parent = repStF;
+
     const ifFinal = bid();
     addBlock(ifFinal, 'control_if', null, repeatId,
       { CONDITION: [2, tsGt0F], SUBSTACK: [2, setSlotF] }, {});
@@ -575,7 +590,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     blocks[advSlot].parent = ifB;
 
     const repeatId = bid();
-    addBlock(repeatId, 'control_repeat', null, setRes0, {
+    addBlock(repeatId, "control_repeat", null, setRes0, {
       TIMES: [1, [6, String(TABLE_SIZE)]], SUBSTACK: [2, ifA],
     }, {});
     blocks[setRes0].next    = repeatId;
@@ -601,7 +616,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     blocks[hashFirst].parent = defId;
   }
 
-  // ── Procedure 4: delete key: %s ──────────────────────────────────────
+      // ── Procedure 4: delete key: %s ──────────────────────────────────────
   // state="0" → stop (not found)  |  state="1"&match → mark tombstone "2", stop  |  else advance
   {
     const defId      = bid();
@@ -629,9 +644,14 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     blocks[stB].parent  = andB;
     blocks[kEqB].parent = andB;
     const repStB = buildRepState('2');
+    const decSize = bid();
+    addBlock(decSize, 'data_changevariableby', null, repStB, { VALUE: [1, [4, '-1']] }, { VARIABLE: ['_ht_size', sizeVarId] });
     const stopB  = buildStop();
-    blocks[repStB].next  = stopB;
-    blocks[stopB].parent = repStB;
+    blocks[repStB].next  = decSize;
+    blocks[decSize].parent = repStB;
+    blocks[decSize].next = stopB;
+    blocks[stopB].parent = decSize;
+
     const ifB = bid();
     addBlock(ifB, 'control_if', null, null,
       { CONDITION: [2, andB], SUBSTACK: [2, repStB] }, {});
@@ -671,7 +691,7 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     blocks[hashFirst].parent = defId;
   }
 
-  // ── Procedure 5: clear ───────────────────────────────────────────────
+      // ── Procedure 5: clear ───────────────────────────────────────────────
   // Delete all, then re-add TABLE_SIZE empty slots
   {
     const defId   = bid();
@@ -697,12 +717,17 @@ export function buildDictionary(spriteId, tableSize = 65536) {
     addBlock(addSt,  'data_addtolist', null,   addVal,
       { ITEM: [1, [10, '0']] }, { LIST: ['_ht_state', stateListId] });
 
+    const setSize0 = bid();
+    addBlock(setSize0, 'data_setvariableto', null, delState, { VALUE: [1, [4, '0']] }, { VARIABLE: ['_ht_size', sizeVarId] });
+    blocks[delState].next = setSize0;
+    blocks[setSize0].parent = delState;
+
     const repeatId = bid();
-    addBlock(repeatId, 'control_repeat', null, delState, {
+    addBlock(repeatId, 'control_repeat', null, setSize0, {
       TIMES: [1, [6, String(TABLE_SIZE)]], SUBSTACK: [2, addKey],
     }, {});
-    blocks[delState].next   = repeatId;
-    blocks[repeatId].parent = delState;
+    blocks[setSize0].next   = repeatId;
+    blocks[repeatId].parent = setSize0;
     blocks[addKey].parent   = repeatId;
 
     addBlock(defId, 'procedures_definition', delKeys, null,
@@ -718,6 +743,37 @@ export function buildDictionary(spriteId, tableSize = 65536) {
       },
     });
     blocks[delKeys].parent = defId;
+  }
+
+
+
+
+
+
+
+
+  // ── Procedure 6: size ───────────────────────────────────────────────
+  {
+    const defId = bid();
+    const protoId = bid();
+    const sizeR = mkVar('_ht_size', sizeVarId);
+    const setResId = bid();
+
+    addBlock(defId, 'procedures_definition', setResId, null, { custom_block: [1, protoId] }, {}, false, true, { x: 20, y: 3500 });
+    addBlock(protoId, 'procedures_prototype', null, defId, {}, {}, true, false, {
+      mutation: {
+        tagName: 'mutation', children: [],
+        proccode: 'size',
+        argumentids: '[]',
+        argumentnames: '[]',
+        argumentdefaults: '[]',
+        warp: 'false',
+      },
+    });
+
+    addBlock(setResId, 'data_setvariableto', null, defId,
+      { VALUE: [3, sizeR, [12, '_ht_size', sizeVarId]] }, { VARIABLE: ['result', resultVarId] });
+    blocks[sizeR].parent = setResId;
   }
 
   return { lists, variables, blocks };
